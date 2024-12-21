@@ -47,18 +47,17 @@ namespace LyricsSupportForClassIsland.Services.NotificationProviders
             // 调用ShowNotification方法显示提醒
             NotificationHostService.ShowNotification(new NotificationRequest()
             {
-                /*   MaskContent = new TextBlock(new Run("It's 4 PM!"))
-                {
-                    VerticalAlignment = VerticalAlignment.Center,
-                    HorizontalAlignment = HorizontalAlignment.Center
-                }   */
+                // 这里可以添加其他通知请求的属性
             });
-            OverlayContent = new TextBlock(new Run(Settings.Message))
+
+            /*MaskContent = new TextBlock(new Run(Settings.Message))
             {
                 VerticalAlignment = VerticalAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Center
-            },
+            };*/
         }
+
+
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
