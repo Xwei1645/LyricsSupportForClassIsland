@@ -1,10 +1,15 @@
 ﻿using ClassIsland.Core.Abstractions.Services;
+using ClassIsland.Shared.Abstraction.Models;
 using ClassIsland.Shared.Interfaces;
 using ClassIsland.Shared.Models.Notification;
+using LyricsSupportForClassIsland.Controls.NotificationProviders;
+using LyricsSupportForClassIsland.Models;
 using Microsoft.Extensions.Hosting;
 using System;
-using System.Timers;
+using System.Linq;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 
 namespace LyricsSupportForClassIsland.Services.NotificationProviders
 {
@@ -16,48 +21,117 @@ namespace LyricsSupportForClassIsland.Services.NotificationProviders
         public object? SettingsElement { get; set; }
         public object? IconElement { get; set; }
 
-        private INotificationHostService NotificationHostService { get; }
-        private System.Timers.Timer _pollingTimer; // 使用 System.Timers.Timer 进行轮询
+        /// <summary>
+        /// 这个属性用来存储提醒的设置。
+        /// </summary>
+        private LyricsNotificationSettings Settings { get; }
 
-        public LyricsNotificationProvider(INotificationHostService notificationHostService)
+        //订阅课表处理前事件PreMainTimerTicked
+        private INotificationHostService NotificationHostService { get; }
+        public ILessonsService LessonsService { get; }
+
+        private DateTime _startTime;
+        private bool _isPlaying;
+        private DateTime _notificationStartTime;
+        private TextBlock _overlayTextBlock;
+        private bool _isNotificationShown;
+
+        public LyricsNotificationProvider(INotificationHostService notificationHostService,
+         ILessonsService lessonsService)
         {
             NotificationHostService = notificationHostService;
+            LessonsService = lessonsService;  // 将课程服务实例保存到属性中备用
             NotificationHostService.RegisterNotificationProvider(this);
 
-            // 初始化轮询定时器
-            _pollingTimer = new System.Timers.Timer(1000); // 设置定时器间隔为1秒
-            _pollingTimer.Elapsed += PollingTimerElapsed; // 订阅定时器事件
-            _pollingTimer.Start(); // 启动定时器
+            // 获取这个提醒提供方的设置，并保存到 Settings 属性上备用。
+            Settings = NotificationHostService.GetNotificationProviderSettings<LyricsNotificationSettings>(ProviderGuid);
+
+            // 将刚刚获取到的提醒提供方设置传给提醒设置控件，这样提醒设置控件就可以访问到提醒设置了。
+            // 然后将 SettingsElement 属性设置为这个控件对象，这样提醒设置界面就会显示我们自定义的提醒设置控件。
+            SettingsElement = new LyricsNotificationProviderSettingsControl(Settings);
+
+            LessonsService.PreMainTimerTicked += LessonsServiceOnPreMainTimerTicked;  // 注册事件
+
+            _startTime = DateTime.MinValue;
+            _isPlaying = false;
+            _isNotificationShown = false;
         }
 
-        private void PollingTimerElapsed(object? sender, ElapsedEventArgs e)
+        private void LessonsServiceOnPreMainTimerTicked(object? sender, EventArgs e)
         {
-            // 检查当前时间是否为16:00:00
-            var currentTime = DateTime.Now;
-            if (currentTime.Hour == 16 && currentTime.Minute == 0 && currentTime.Second == 0)
+            if (!_isPlaying)
             {
-                // 显示提醒
-                ShowNotification();
-                _pollingTimer.Stop(); // 停止定时器，避免重复提醒
+                _startTime = DateTime.Now;
+                _isPlaying = true;
             }
+
+            // 获取当前时间
+            var currentTime = DateTime.Now;
+            var elapsedTime = currentTime - _startTime;
+
+            // 检查是否立即显示提醒
+            if (Settings.ShowNotificationNow && !_isNotificationShown)
+            {
+                _notificationStartTime = DateTime.Now;
+                Settings.ShowNotificationNow = false;
+                ShowNotification();
+                return;
+            }
+
+            // 检查是否到达设定的提醒时间
+            if (currentTime.TimeOfDay >= Settings.ReminderTime && currentTime.TimeOfDay < Settings.ReminderTime.Add(TimeSpan.FromSeconds(1)) && !_isNotificationShown)
+            {
+                _notificationStartTime = DateTime.Now;
+                ShowNotification();
+            }
+
+            // 检查是否到达设定的播放时间
+            if (elapsedTime >= Settings.PlayTime && !_isNotificationShown)
+            {
+                _notificationStartTime = DateTime.Now;
+                ShowNotification();
+            }
+
+            // 更新OverlayContent
+            UpdateOverlayContent();
         }
 
         private void ShowNotification()
         {
-            // 调用ShowNotification方法显示提醒
-            NotificationHostService.ShowNotification(new NotificationRequest()
-            {
-                // 这里可以添加其他通知请求的属性
-            });
-
-            /*MaskContent = new TextBlock(new Run(Settings.Message))
+            _overlayTextBlock = new TextBlock
             {
                 VerticalAlignment = VerticalAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Center
-            };*/
+            };
+
+            // 调用ShowNotification方法显示提醒
+            NotificationHostService.ShowNotification(new NotificationRequest()
+            {
+                MaskContent = new TextBlock(new Run("歌词"))
+                {
+                    VerticalAlignment = VerticalAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Center
+                },
+                OverlayContent = _overlayTextBlock,
+                OverlayDuration = Settings.OverlayDuration // 设置正文显示时长
+            });
+
+            _isNotificationShown = true; // 设置标志位，表示提醒已显示
         }
 
+        private void UpdateOverlayContent()
+        {
+            var elapsedTime = DateTime.Now - _notificationStartTime;
+            var currentLyrics = Settings.ParsedLyrics
+                .Where(line => line.Timestamp <= elapsedTime)
+                .OrderByDescending(line => line.Timestamp)
+                .FirstOrDefault();
 
+            if (_overlayTextBlock != null)
+            {
+                _overlayTextBlock.Text = currentLyrics?.Text ?? "";
+            }
+        }
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
@@ -67,7 +141,7 @@ namespace LyricsSupportForClassIsland.Services.NotificationProviders
         public async Task StopAsync(CancellationToken cancellationToken)
         {
             // 停止服务时的逻辑
-            _pollingTimer?.Stop(); // 确保在服务停止时也停止定时器
+            _isPlaying = false;
         }
     }
 }

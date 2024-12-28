@@ -1,76 +1,179 @@
-﻿using System.Configuration;
-using ClassIsland.Core.Controls;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
-using Microsoft.Win32;
+using LyricsSupportForClassIsland.Services.LyricsParser;
 
-namespace LyricsSupportForClassIsland.Models;
-
-public class LyricsNotificationSettings : ObservableRecipient
+namespace LyricsSupportForClassIsland.Models
 {
-    private string _title = "test";
-    private string _lyricsFilePath = "";
-
-    /// <summary>
-    /// 要显示的文本
-    /// </summary>
-    public string Title
+    public class LyricsNotificationSettings : ObservableRecipient
     {
-        get => _title;
-        set
-        {
-            if (value == _title) return;
-            _title = value;
-            OnPropertyChanged();
-        }
-    }
+        private string _lyricsPath = "";
+        private string _lyricsContent = "";
+        private TimeSpan _playTime;
+        private TimeSpan _overlayDuration;
+        private TimeSpan _reminderTime;
+        private List<LyricsLine> _parsedLyrics = new();
+        private bool _showNotificationNow;
 
-    /// <summary>
-    /// Lyrics 文件路径
-    /// </summary>
-    public string LyricsFilePath
-    {
-        get => _lyricsFilePath;
-        set
+        /// <summary>
+        /// Lyrics 文件路径
+        /// </summary>
+        public string LyricsPath
         {
-            if (value == _lyricsFilePath) return;
-            _lyricsFilePath = value;
-            OnPropertyChanged();
-        }
-    }
-
-    /// <summary>
-    /// 打开文件对话框，让用户选择 Lyrics 文件
-    /// </summary>
-    public void SelectLyricsFile()
-    {
-        // 创建一个SettingsCard对象
-        SettingsCard settingsCard = new SettingsCard();
-        // 设置SettingsCard的标题和描述
-        settingsCard.Header = "歌词文件路径";
-        settingsCard.Description = "选择本地的LRC歌词文件。";
-        /*// 创建一个按钮，用于打开文件对话框选择LRC文件
-        settingsCardButton selectFileButton = new Button();
-        selectFileButton.Content = "选择歌词文件";
-        selectFileButton.Click += (sender, e) =>
-        {
-            OpenFileDialog openFileDialog = new OpenFileDialog
+            get => _lyricsPath;
+            set
             {
-                Filter = "Lyrics Files (*.lrc)|*.lrc|All Files (*.*)|*.*",
-                Title = "Select Lyrics File"
-            };
-
-            if (openFileDialog.ShowDialog() == true)
-            {
-                // 将选择的文件路径赋值给SettingsCard的Switcher属性
-                settingsCard.Switcher = openFileDialog.FileName;
+                if (value == _lyricsPath) return;
+                _lyricsPath = value;
+                OnPropertyChanged();
+                LoadLyricsContent(); // 加载歌词内容
             }
-        };
+        }
 
-        // 将按钮添加到SettingsCard中
-        settingsCard.Content = selectFileButton;
+        /// <summary>
+        /// 解析并显示歌词文件内容
+        /// </summary>
+        public string LyricsContent
+        {
+            get => _lyricsContent;
+            set
+            {
+                if (value == _lyricsContent) return;
+                _lyricsContent = value;
+                OnPropertyChanged();
+            }
+        }
 
-        // 将SettingsCard添加到设置页面中
-        SettingsPage settingsPage = new SettingsPage();
-        settingsPage.SettingsCards.Add(settingsCard);*/
+        /// <summary>
+        /// 播放时间
+        /// </summary>
+        public TimeSpan PlayTime
+        {
+            get => _playTime;
+            set
+            {
+                if (value == _playTime) return;
+                _playTime = value;
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
+        /// 播放时间字符串
+        /// </summary>
+        public string PlayTimeString
+        {
+            get => _playTime.ToString(@"hh\:mm\:ss");
+            set
+            {
+                if (TimeSpan.TryParse(value, out var time))
+                {
+                    PlayTime = time;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 提醒持续时间
+        /// </summary>
+        public TimeSpan OverlayDuration
+        {
+            get => _overlayDuration;
+            set
+            {
+                if (value == _overlayDuration) return;
+                _overlayDuration = value;
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
+        /// 提醒持续时间字符串
+        /// </summary>
+        public string OverlayDurationString
+        {
+            get => _overlayDuration.ToString(@"hh\:mm\:ss");
+            set
+            {
+                if (TimeSpan.TryParse(value, out var time))
+                {
+                    OverlayDuration = time;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 提醒时间
+        /// </summary>
+        public TimeSpan ReminderTime
+        {
+            get => _reminderTime;
+            set
+            {
+                if (value == _reminderTime) return;
+                _reminderTime = value;
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
+        /// 提醒时间字符串
+        /// </summary>
+        public string ReminderTimeString
+        {
+            get => _reminderTime.ToString(@"hh\:mm\:ss");
+            set
+            {
+                if (TimeSpan.TryParse(value, out var time))
+                {
+                    ReminderTime = time;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 解析后的歌词
+        /// </summary>
+        public List<LyricsLine> ParsedLyrics
+        {
+            get => _parsedLyrics;
+            set
+            {
+                if (value == _parsedLyrics) return;
+                _parsedLyrics = value;
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>
+        /// 是否立即显示提醒
+        /// </summary>
+        public bool ShowNotificationNow
+        {
+            get => _showNotificationNow;
+            set
+            {
+                if (value == _showNotificationNow) return;
+                _showNotificationNow = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private void LoadLyricsContent()
+        {
+            if (File.Exists(_lyricsPath))
+            {
+                LyricsContent = File.ReadAllText(_lyricsPath);
+                ParsedLyrics = new LyricsParser().Parse(LyricsContent);
+            }
+            else
+            {
+                LyricsContent = "无法加载歌词文件内容。";
+                ParsedLyrics.Clear();
+            }
+        }
     }
 }
+
+

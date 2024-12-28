@@ -1,12 +1,58 @@
-﻿<UserControl x:Class="PluginWithNotificationProviders.Controls.NotificationProviders.MyNotificationProviderSettingsControl"
-            xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-            xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-            xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-            xmlns:local="clr-namespace:PluginWithNotificationProviders.Controls.NotificationProviders"
-            mc:Ignorable="d"
-            d:DesignHeight="300" d:DesignWidth="300">
-    <StackPanel DataContext="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=local:MyNotificationProviderSettingsControl}}">
-        <TextBox Text="{Binding Settings.Message}"/>
-    </StackPanel>
+﻿<UserControl x:Class="LyricsSupportForClassIsland.Controls.NotificationProviders.LyricsNotificationProviderSettingsControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:controls1="clr-namespace:ClassIsland.Core.Controls;assembly=ClassIsland.Core"
+             xmlns:local="clr-namespace:LyricsSupportForClassIsland.Controls.NotificationProviders" 
+             xmlns:models="clr-namespace:LyricsSupportForClassIsland.Models" 
+             d:DataContext="{d:DesignInstance Type=models:LyricsNotificationSettings}"
+             mc:Ignorable="d"
+             d:DesignHeight="300" d:DesignWidth="300">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Lyrics Path Label -->
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="歌词文件路径:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+
+        <!-- Lyrics Path TextBox -->
+        <TextBox Grid.Row="0" Grid.Column="1" Width="200" Text="{Binding LyricsPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" VerticalAlignment="Center"/>
+
+        <!-- Select Lyrics File Button -->
+        <Button Grid.Row="0" Grid.Column="2" Content="选择歌词文件" Click="SelectLyricsFile_Click" VerticalAlignment="Center" Margin="10,0,0,0"/>
+
+        <!-- Overlay Duration Label -->
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="提醒持续时间 (HH:MM:SS):" VerticalAlignment="Center" Margin="0,0,10,0"/>
+
+        <!-- Overlay Duration TextBox -->
+        <TextBox Grid.Row="1" Grid.Column="1" Width="200" Text="{Binding OverlayDurationString, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
+
+        <!-- Reminder Time Label -->
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="提醒时间 (HH:MM:SS):" VerticalAlignment="Center" Margin="0,0,10,0"/>
+
+        <!-- Reminder Time TextBox -->
+        <TextBox Grid.Row="2" Grid.Column="1" Width="200" Text="{Binding ReminderTimeString, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
+
+        <!-- Show Now Button -->
+        <Button Grid.Row="2" Grid.Column="2" Content="立即显示" Click="ShowNow_Click" VerticalAlignment="Center" Margin="10,0,0,0"/>
+
+        <!-- Lyrics Content -->
+        <StackPanel Grid.Row="3" Grid.ColumnSpan="3" Margin="10">
+            <TextBlock TextWrapping="Wrap" Text="歌词文件内容" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+            <ScrollViewer Margin="0 0 0 6" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                <TextBlock TextWrapping="Wrap" Text="{Binding LyricsContent}" Margin="10"/>
+            </ScrollViewer>
+        </StackPanel>
+    </Grid>
 </UserControl>
+
