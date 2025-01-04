@@ -1,4 +1,4 @@
-# 岛上歌词 LyricalMusicPlayingIsland
+# 岛上歌词 LyricsSupportForClassIsland
 岛上歌词是一款适用于ClassIsland的插件，用于以提醒方式显示歌词。
 
 ## 特别感谢 Special Thanks
