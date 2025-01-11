@@ -4,6 +4,7 @@ using ClassIsland.Shared.Interfaces;
 using ClassIsland.Shared.Models.Notification;
 using LyricsSupportForClassIsland.Controls.NotificationProviders;
 using LyricsSupportForClassIsland.Models;
+using MaterialDesignThemes.Wpf;
 using Microsoft.Extensions.Hosting;
 using System;
 using System.Linq;
@@ -49,6 +50,14 @@ namespace LyricsSupportForClassIsland.Services.NotificationProviders
             // 将刚刚获取到的提醒提供方设置传给提醒设置控件，这样提醒设置控件就可以访问到提醒设置了。
             // 然后将 SettingsElement 属性设置为这个控件对象，这样提醒设置界面就会显示我们自定义的提醒设置控件。
             SettingsElement = new LyricsNotificationProviderSettingsControl(Settings);
+
+            // 设置提醒设置界面的图标
+            IconElement = new PackIcon
+            {
+                Kind = PackIconKind.QueueMusic,
+                Width = 24,
+                Height = 24
+            };
 
             LessonsService.PreMainTimerTicked += LessonsServiceOnPreMainTimerTicked;  // 注册事件
 
@@ -104,14 +113,41 @@ namespace LyricsSupportForClassIsland.Services.NotificationProviders
                 HorizontalAlignment = HorizontalAlignment.Center
             };
 
+
+            //<summary>
+            //感谢Copilot编写带有图标的MaskContent, 虽然可能实现方式有些奇怪()
+            // 创建包含图标和文本的StackPanel
+            var stackPanel = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+
+            // 右侧图标
+            var rightIcon = new PackIcon
+            {
+                Kind = PackIconKind.QueueMusic,
+                Width = 24,
+                Height = 24,
+                Margin = new Thickness(4, 0, 0, 0) // 添加左边距
+            };
+
+            // 文本
+            var textBlock = new TextBlock(new Run("歌词"))
+            {
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+
+            // 将图标和文本添加到StackPanel
+            stackPanel.Children.Add(textBlock);
+            stackPanel.Children.Add(rightIcon);
+
             // 调用ShowNotification方法显示提醒
             NotificationHostService.ShowNotification(new NotificationRequest()
             {
-                MaskContent = new TextBlock(new Run("歌词"))
-                {
-                    VerticalAlignment = VerticalAlignment.Center,
-                    HorizontalAlignment = HorizontalAlignment.Center
-                },
+                MaskContent = stackPanel,
                 OverlayContent = _overlayTextBlock,
                 OverlayDuration = Settings.OverlayDuration // 设置正文显示时长
             });
@@ -145,3 +181,4 @@ namespace LyricsSupportForClassIsland.Services.NotificationProviders
         }
     }
 }
+
