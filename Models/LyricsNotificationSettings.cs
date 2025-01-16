@@ -12,7 +12,7 @@ namespace LyricsSupportForClassIsland.Models
         private string _lyricsContent = "";
         private TimeSpan _playTime;
         private TimeSpan _overlayDuration;
-        private TimeSpan _reminderTime;
+        private TimeSpan _notificationTime;
         private List<LyricsLine> _parsedLyrics = new();
         private bool _showNotificationNow;
 
@@ -106,13 +106,13 @@ namespace LyricsSupportForClassIsland.Models
         /// <summary>
         /// 提醒时间
         /// </summary>
-        public TimeSpan ReminderTime
+        public TimeSpan NotificationTime
         {
-            get => _reminderTime;
+            get => _notificationTime;
             set
             {
-                if (value == _reminderTime) return;
-                _reminderTime = value;
+                if (value == _notificationTime) return;
+                _notificationTime = value;
                 OnPropertyChanged();
             }
         }
@@ -120,14 +120,14 @@ namespace LyricsSupportForClassIsland.Models
         /// <summary>
         /// 提醒时间字符串
         /// </summary>
-        public string ReminderTimeString
+        public string NotificationTimeString
         {
-            get => _reminderTime.ToString(@"hh\:mm\:ss");
+            get => _notificationTime.ToString(@"hh\:mm\:ss");
             set
             {
                 if (TimeSpan.TryParse(value, out var time))
                 {
-                    ReminderTime = time;
+                    NotificationTime = time;
                 }
             }
         }

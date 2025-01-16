@@ -32,10 +32,9 @@ namespace LyricsSupportForClassIsland.Services.NotificationProviders
         public ILessonsService LessonsService { get; }
 
         private DateTime _startTime;
-        private bool _isPlaying;
         private DateTime _notificationStartTime;
         private TextBlock _overlayTextBlock;
-        private bool _isNotificationShown;
+        private bool _isPlaying;
 
         public LyricsNotificationProvider(INotificationHostService notificationHostService,
          ILessonsService lessonsService)
@@ -63,46 +62,48 @@ namespace LyricsSupportForClassIsland.Services.NotificationProviders
 
             _startTime = DateTime.MinValue;
             _isPlaying = false;
-            _isNotificationShown = false;
         }
 
         private void LessonsServiceOnPreMainTimerTicked(object? sender, EventArgs e)
         {
-            if (!_isPlaying)
-            {
-                _startTime = DateTime.Now;
-                _isPlaying = true;
-            }
-
             // 获取当前时间
             var currentTime = DateTime.Now;
-            var elapsedTime = currentTime - _startTime;
 
             // 检查是否立即显示提醒
-            if (Settings.ShowNotificationNow && !_isNotificationShown)
+            if (Settings.ShowNotificationNow && !_isPlaying)
             {
-                _notificationStartTime = DateTime.Now;
-                Settings.ShowNotificationNow = false;
-                ShowNotification();
+                StartNotification();
                 return;
             }
 
             // 检查是否到达设定的提醒时间
-            if (currentTime.TimeOfDay >= Settings.ReminderTime && currentTime.TimeOfDay < Settings.ReminderTime.Add(TimeSpan.FromSeconds(1)) && !_isNotificationShown)
+            if (currentTime.TimeOfDay >= Settings.NotificationTime && currentTime.TimeOfDay < Settings.NotificationTime.Add(TimeSpan.FromSeconds(1)) && !_isPlaying)
             {
-                _notificationStartTime = DateTime.Now;
-                ShowNotification();
+                StartNotification();
+                return;
             }
 
             // 检查是否到达设定的播放时间
-            if (elapsedTime >= Settings.PlayTime && !_isNotificationShown)
+            var elapsedTime = currentTime - _startTime;
+            if (elapsedTime >= Settings.PlayTime && !_isPlaying)
             {
-                _notificationStartTime = DateTime.Now;
-                ShowNotification();
+                StartNotification();
+                return;
             }
 
             // 更新OverlayContent
-            UpdateOverlayContent();
+            if (_isPlaying)
+            {
+                UpdateOverlayContent();
+            }
+        }
+
+        private void StartNotification()
+        {
+            _notificationStartTime = DateTime.Now;
+            _startTime = DateTime.Now;
+            _isPlaying = true;
+            ShowNotification();
         }
 
         private void ShowNotification()
@@ -113,9 +114,6 @@ namespace LyricsSupportForClassIsland.Services.NotificationProviders
                 HorizontalAlignment = HorizontalAlignment.Center
             };
 
-
-            //<summary>
-            //感谢Copilot编写带有图标的MaskContent, 虽然可能实现方式有些奇怪()
             // 创建包含图标和文本的StackPanel
             var stackPanel = new StackPanel
             {
@@ -152,7 +150,7 @@ namespace LyricsSupportForClassIsland.Services.NotificationProviders
                 OverlayDuration = Settings.OverlayDuration // 设置正文显示时长
             });
 
-            _isNotificationShown = true; // 设置标志位，表示提醒已显示
+            _isPlaying = true; // 设置标志位，表示提醒已显示
         }
 
         private void UpdateOverlayContent()
@@ -181,4 +179,3 @@ namespace LyricsSupportForClassIsland.Services.NotificationProviders
         }
     }
 }
-

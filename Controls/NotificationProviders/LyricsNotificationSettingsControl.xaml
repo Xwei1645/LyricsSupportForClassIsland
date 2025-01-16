@@ -37,11 +37,11 @@
         <!-- Overlay Duration TextBox -->
         <TextBox Grid.Row="1" Grid.Column="1" Width="200" Text="{Binding OverlayDurationString, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
 
-        <!-- Reminder Time Label -->
+        <!-- Notification Time Label -->
         <TextBlock Grid.Row="2" Grid.Column="0" Text="提醒时间 (HH:MM:SS):" VerticalAlignment="Center" Margin="0,0,10,0"/>
 
-        <!-- Reminder Time TextBox -->
-        <TextBox Grid.Row="2" Grid.Column="1" Width="200" Text="{Binding ReminderTimeString, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
+        <!-- Notification Time TextBox -->
+        <TextBox Grid.Row="2" Grid.Column="1" Width="200" Text="{Binding NotificationTimeString, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center"/>
 
         <!-- Show Now Button -->
         <Button Grid.Row="2" Grid.Column="2" Content="立即显示" Click="ShowNow_Click" VerticalAlignment="Center" Margin="10,0,0,0"/>
