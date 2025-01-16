@@ -13,6 +13,7 @@ namespace LyricsSupportForClassIsland
         public override void Initialize(HostBuilderContext context, IServiceCollection services)
         {
             services.AddHostedService<LyricsNotificationProvider>();
+            services.AddHostedService<NCMNotificationProvider>();
         }
     }
 
